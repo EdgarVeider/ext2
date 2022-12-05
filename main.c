@@ -1,12 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
+#include "function_ext2.h"
 
 int main(){
-    int fileDescritor;
-    fileDescritor = open("myext2image.img", O_RDONLY);
 
-    printf("%d", fileDescritor);
+    EXT_read_rootInode();
+
+    return 0;
 }
