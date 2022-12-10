@@ -77,35 +77,7 @@ struct ext2_super_block Read_SuperBlock(int print){
 	return super;
 }
 
-struct ext2_group_desc Read_GroupDesc(int print){
-	struct ext2_super_block super;
-	struct ext2_group_desc group;
-	int fd;
-
-	/* open floppy device */
-
-	if ((fd = open(FD_DEVICE, O_RDONLY)) < 0) {
-		perror(FD_DEVICE);
-		exit(1);  /* error while opening the floppy device */
-	}
-
-	/* read super-block */
-
-	lseek(fd, BASE_OFFSET, SEEK_SET); 
-	read(fd, &super, sizeof(super));
-
-	if (super.s_magic != EXT2_SUPER_MAGIC) {
-		fprintf(stderr, "Not a Ext2 filesystem\n");
-		exit(1);
-	}
-		
-	block_size = 1024 << super.s_log_block_size;
-
-	/* read group descriptor */
-
-	lseek(fd, BASE_OFFSET + block_size, SEEK_SET);
-	read(fd, &group, sizeof(group));
-	close(fd);
+void Read_GroupDesc(int print, struct ext2_super_block *super, struct ext2_group_desc *group, int fd){
 
 	if(print == 1){
 		printf("Reading first group-descriptor from device " FD_DEVICE ":\n"
@@ -116,14 +88,13 @@ struct ext2_group_desc Read_GroupDesc(int print){
 			"Free inodes count  : %u\n"
 			"Directories count  : %u\n"
 			,
-			group.bg_block_bitmap,
-			group.bg_inode_bitmap,
-			group.bg_inode_table,
-			group.bg_free_blocks_count,
-			group.bg_free_inodes_count,
-			group.bg_used_dirs_count);    /* directories count */
+			group->bg_block_bitmap,
+			group->bg_inode_bitmap,
+			group->bg_inode_table,
+			group->bg_free_blocks_count,
+			group->bg_free_inodes_count,
+			group->bg_used_dirs_count);    /* directories count */
 	}
-	return group;
 }
 
 void Read_RootInode(){
@@ -316,10 +287,12 @@ void read_arq(int fd, struct ext2_inode *inode){
 	{
 		printf("%c", bloco[i]);
 	}
-	
-	
 }
 
+//Funções Finais 
+void CAT_EXT2(){
+
+}
 
 int main(){
 struct ext2_super_block super;
@@ -354,10 +327,36 @@ struct ext2_super_block super;
 	/* show entries in the root directory */
 
 	read_inode(fd, 2, &group, &inode);   /* read inode 2 (root directory) */
-	unsigned int i_number = Read_Inode_Number(fd, &inode, &group, "hello.txt");
-	read_inode(fd, i_number, &group, &inode);
-	read_arq(fd, &inode);
+	unsigned int i_number = Read_Inode_Number(fd, &inode, &group, "livros");
+	
+	int group_number = (i_number - 1) / super.s_inodes_per_group;
+	lseek(fd, BASE_OFFSET + block_size + sizeof(struct ext2_group_desc)*group_number, SEEK_SET);
+	read(fd, &group, sizeof(group));
+	//Read_GroupDesc(1, &super, &group, fd);
+	
+	unsigned int index = ((int)i_number) % super.s_inodes_per_group;
 
+	read_inode(fd, index, &group, &inode);
+	read_dir(fd, &inode, &group);
+
+	//cd2
+	i_number = Read_Inode_Number(fd, &inode, &group, "religiosos");
+	group_number = (i_number - 1) / super.s_inodes_per_group;
+	lseek(fd, BASE_OFFSET + block_size + sizeof(struct ext2_group_desc)*group_number, SEEK_SET);
+	read(fd, &group, sizeof(group));
+
+	index = ((int)i_number) % super.s_inodes_per_group;
+
+	read_inode(fd, index, &group, &inode);
+	printf("\n\n\n");
+	read_dir(fd, &inode, &group);
+
+	//ler a biblia
+	i_number = Read_Inode_Number(fd, &inode, &group, "religiosos");
+	index = ((int)i_number) % super.s_inodes_per_group;
+	read_inode(fd, index, &group, &inode);
+	printf("\n\n\n");
+	read_arq(fd, &inode);
 
     return 0;
 }
