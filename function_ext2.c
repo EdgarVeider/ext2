@@ -9,7 +9,7 @@ static unsigned int block_size = 0;
 static void read_dir(int, const struct ext2_inode*, const struct ext2_group_desc*);
 static void read_inode(int, int, const struct ext2_group_desc*, struct ext2_inode*);
 
-void ETX_read_superblock(){
+SuperBlock ETX_read_superblock(){
 
 	struct ext2_super_block super;
 	int fd;
@@ -57,10 +57,13 @@ void ETX_read_superblock(){
 	       super.s_first_ino,          /* first non-reserved inode */
 	       super.s_inode_size);
 	
+	return super;
+
 	exit(0);
+
 }
 
-void EXT_read_groupBlockDescriptor(){
+GroupDesc EXT_read_groupBlockDescriptor(){
 
     struct ext2_super_block super;
 	struct ext2_group_desc group;
@@ -100,6 +103,8 @@ void EXT_read_groupBlockDescriptor(){
 	       group.bg_free_blocks_count,
 	       group.bg_free_inodes_count,
 	       group.bg_used_dirs_count);    /* directories count */
+	
+	return group;
 	
 	exit(0);
 }
@@ -160,7 +165,7 @@ void EXT_read_rootInode(){
 }
 
 void EXT_contents_diretory(){
-    struct ext2_super_block super;
+	struct ext2_super_block super;
 	struct ext2_group_desc group;
 	struct ext2_inode inode;
 	int fd;
@@ -176,6 +181,7 @@ void EXT_contents_diretory(){
 
 	lseek(fd, BASE_OFFSET, SEEK_SET); 
 	read(fd, &super, sizeof(super));
+
 
 		
 	block_size = 1024 << super.s_log_block_size;
@@ -212,13 +218,11 @@ void EXT_contents_diretory(){
 
 //Funcções Auxialiares*****************************************************
 
-static void read_inode(fd, inode_no, group, inode)
-     int                           fd;        /* the floppy disk file descriptor */
-     int                           inode_no;  /* the inode number to read  */
-     const struct ext2_group_desc *group;     /* the block group to which the inode belongs */
-     struct ext2_inode            *inode;     /* where to put the inode from disk  */
+static 
+void read_inode(int fd, int inode_no, const struct ext2_group_desc *group, struct ext2_inode *inode)
 {
-	lseek(fd, BLOCK_OFFSET(group->bg_inode_table)+(inode_no-1)*sizeof(struct ext2_inode), SEEK_SET);
+	lseek(fd, BLOCK_OFFSET(group->bg_inode_table)+(inode_no-1)*sizeof(struct ext2_inode), 
+	      SEEK_SET);
 	read(fd, inode, sizeof(struct ext2_inode));
 } /* read_inode() */
 
@@ -229,6 +233,7 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 	if (S_ISDIR(inode->i_mode)) {
 		struct ext2_dir_entry_2 *entry;
 		unsigned int size = 0;
+		printf("entrou");
 
 		if ((block = malloc(block_size)) == NULL) { /* allocate memory for the data block */
 			fprintf(stderr, "Memory error\n");
@@ -239,6 +244,7 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 		lseek(fd, BLOCK_OFFSET(inode->i_block[0]), SEEK_SET);
 		read(fd, block, block_size);                /* read block from disk*/
 
+
 		entry = (struct ext2_dir_entry_2 *) block;  /* first entry in the directory */
                 /* Notice that the list may be terminated with a NULL
                    entry (entry->inode == NULL)*/
@@ -246,7 +252,14 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 			char file_name[EXT2_NAME_LEN+1];
 			memcpy(file_name, entry->name, entry->name_len);
 			file_name[entry->name_len] = 0;     /* append null character to the file name */
-			printf("%10u %s\n", entry->inode, file_name);
+			//printf("%10u %s\n", entry->inode, file_name);
+			printf("%d", entry->name_len);
+			for (int i = 0; i < entry->name_len; i++)
+			{
+				printf("%c", entry->name[i]);
+			}
+			printf("\n");
+
 			entry = (void*) entry + entry->rec_len;
 			size += entry->rec_len;
 		}
@@ -254,3 +267,4 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 		free(block);
 	}
 } /* read_dir() */
+

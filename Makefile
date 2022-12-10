@@ -1,5 +1,5 @@
 all:
 	gcc function_ext2.c -c
-	gcc main.c function_etx2.o -o main
+	gcc function_ext2.o main.c -o main
 
 

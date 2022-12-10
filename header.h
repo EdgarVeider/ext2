@@ -35,7 +35,7 @@ struct ext2_acl_entry	/* Access Control List Entry */
 /*
  * Structure of a blocks group descriptor
  */
-struct ext2_group_desc
+typedef struct ext2_group_desc
 {
 	__u32	bg_block_bitmap;		/* Blocks bitmap block  */
 	__u32	bg_inode_bitmap;		/* Inodes bitmap block */
@@ -45,11 +45,11 @@ struct ext2_group_desc
 	__u16	bg_used_dirs_count;	/* Directories count */
 	__u16	bg_pad;
 	__u32	bg_reserved[3];
-};
+}GroupDesc;
 
 
 //INODE STRUCT****************************************************************************************
-struct ext2_inode {
+typedef struct ext2_inode {
 	__u16	i_mode;		/* File mode */
 	__u16	i_uid;		/* Low 16 bits of Owner Uid */
 	__u32	i_size;		/* Size in bytes */
@@ -101,10 +101,10 @@ struct ext2_inode {
 			__u32	m_i_reserved2[2];
 		} masix2;
 	} osd2;				/* OS dependent 2 */
-};
+}INODE;
 
 //SUPERBLOCK STRUCT*********************************************************************************
-struct ext2_super_block {
+typedef struct ext2_super_block {
 	__u32	s_inodes_count;		/* Inodes count */
 	__u32	s_blocks_count;		/* Blocks count */
 	__u32	s_r_blocks_count;	/* Reserved blocks count */
@@ -161,7 +161,7 @@ struct ext2_super_block {
 	__u8	s_prealloc_dir_blocks;	/* Nr to preallocate for dirs */
 	__u16	s_padding1;
 	__u32	s_reserved[204];	/* Padding to the end of the block */
-};
+}SuperBlock;
 
 
 //DyrEntry Struct

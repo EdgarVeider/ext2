@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include "header.h"
 
-void ETX_read_superblock();
-void EXT_read_groupBlockDescriptor();
+SuperBlock ETX_read_superblock();
+GroupDesc EXT_read_groupBlockDescriptor();
 void EXT_read_rootInode();
+void EXT_contents_diretory();
+static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_group_desc *group);
