@@ -1,17 +1,24 @@
-#include "function_ext2.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "ext2_fs.h"
 
-//Defines Superblock
-#define BASE_OFFSET 1024
-#define FD_DEVICE "myext2image.img" 
-static unsigned int block_size = 0; 
-#define BLOCK_OFFSET(block) (BASE_OFFSET + (block-1)*block_size)  
+#define BASE_OFFSET 1024                   /* locates beginning of the super block (first group) */
+#define FD_DEVICE "myext2image.img"              /* the floppy disk device */
+#define BLOCK_OFFSET(block) (BASE_OFFSET + (block-1)*block_size)
+
+static unsigned int block_size = 0;        /* block size (to be calculated) */
 
 static void read_dir(int, const struct ext2_inode*, const struct ext2_group_desc*);
 static void read_inode(int, int, const struct ext2_group_desc*, struct ext2_inode*);
 
-SuperBlock ETX_read_superblock(){
-
-	struct ext2_super_block super;
+void Read_SuperBlock(){
+		struct ext2_super_block super;
 	int fd;
 
 	/* open floppy device */
@@ -27,6 +34,10 @@ SuperBlock ETX_read_superblock(){
 	read(fd, &super, sizeof(super));
 	close(fd);
 
+	if (super.s_magic != EXT2_SUPER_MAGIC) {
+		fprintf(stderr, "Not a Ext2 filesystem\n");
+		exit(1);
+	}
 		
 	block_size = 1024 << super.s_log_block_size;
 
@@ -57,15 +68,10 @@ SuperBlock ETX_read_superblock(){
 	       super.s_first_ino,          /* first non-reserved inode */
 	       super.s_inode_size);
 	
-	return super;
-
-	exit(0);
-
 }
 
-GroupDesc EXT_read_groupBlockDescriptor(){
-
-    struct ext2_super_block super;
+void Read_GroupDesc(){
+	struct ext2_super_block super;
 	struct ext2_group_desc group;
 	int fd;
 
@@ -80,6 +86,11 @@ GroupDesc EXT_read_groupBlockDescriptor(){
 
 	lseek(fd, BASE_OFFSET, SEEK_SET); 
 	read(fd, &super, sizeof(super));
+
+	if (super.s_magic != EXT2_SUPER_MAGIC) {
+		fprintf(stderr, "Not a Ext2 filesystem\n");
+		exit(1);
+	}
 		
 	block_size = 1024 << super.s_log_block_size;
 
@@ -103,13 +114,9 @@ GroupDesc EXT_read_groupBlockDescriptor(){
 	       group.bg_free_blocks_count,
 	       group.bg_free_inodes_count,
 	       group.bg_used_dirs_count);    /* directories count */
-	
-	return group;
-	
-	exit(0);
 }
 
-void EXT_read_rootInode(){
+void Read_RootInode(){
 	struct ext2_super_block super;
 	struct ext2_group_desc group;
 	struct ext2_inode inode;
@@ -127,6 +134,11 @@ void EXT_read_rootInode(){
 
 	lseek(fd, BASE_OFFSET, SEEK_SET); 
 	read(fd, &super, sizeof(super));
+
+	if (super.s_magic != EXT2_SUPER_MAGIC) {
+		fprintf(stderr, "Not a Ext2 filesystem\n");
+		exit(1);
+	}
 		
 	block_size = 1024 << super.s_log_block_size;
 
@@ -161,10 +173,9 @@ void EXT_read_rootInode(){
 			printf("Triple   : %u\n", inode.i_block[i]);
 
 	close(fd);
-	exit(0);
 }
 
-void EXT_contents_diretory(){
+void List_ETX(){
 	struct ext2_super_block super;
 	struct ext2_group_desc group;
 	struct ext2_inode inode;
@@ -182,7 +193,10 @@ void EXT_contents_diretory(){
 	lseek(fd, BASE_OFFSET, SEEK_SET); 
 	read(fd, &super, sizeof(super));
 
-
+	if (super.s_magic != EXT2_SUPER_MAGIC) {
+		fprintf(stderr, "Not a Ext2 filesystem\n");
+		exit(1);
+	}
 		
 	block_size = 1024 << super.s_log_block_size;
 
@@ -197,26 +211,10 @@ void EXT_contents_diretory(){
 	read_dir(fd, &inode, &group);
 
 	close(fd);
-	exit(0);
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//Funcções Auxialiares*****************************************************
+//Funções Auxiliares 4.c
 
 static 
 void read_inode(int fd, int inode_no, const struct ext2_group_desc *group, struct ext2_inode *inode)
@@ -226,6 +224,7 @@ void read_inode(int fd, int inode_no, const struct ext2_group_desc *group, struc
 	read(fd, inode, sizeof(struct ext2_inode));
 } /* read_inode() */
 
+
 static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_group_desc *group)
 {
 	void *block;
@@ -233,7 +232,6 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 	if (S_ISDIR(inode->i_mode)) {
 		struct ext2_dir_entry_2 *entry;
 		unsigned int size = 0;
-		printf("entrou");
 
 		if ((block = malloc(block_size)) == NULL) { /* allocate memory for the data block */
 			fprintf(stderr, "Memory error\n");
@@ -244,7 +242,6 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 		lseek(fd, BLOCK_OFFSET(inode->i_block[0]), SEEK_SET);
 		read(fd, block, block_size);                /* read block from disk*/
 
-
 		entry = (struct ext2_dir_entry_2 *) block;  /* first entry in the directory */
                 /* Notice that the list may be terminated with a NULL
                    entry (entry->inode == NULL)*/
@@ -252,14 +249,7 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 			char file_name[EXT2_NAME_LEN+1];
 			memcpy(file_name, entry->name, entry->name_len);
 			file_name[entry->name_len] = 0;     /* append null character to the file name */
-			//printf("%10u %s\n", entry->inode, file_name);
-			printf("%d", entry->name_len);
-			for (int i = 0; i < entry->name_len; i++)
-			{
-				printf("%c", entry->name[i]);
-			}
-			printf("\n");
-
+			printf("%10u %s\n", entry->inode, file_name);
 			entry = (void*) entry + entry->rec_len;
 			size += entry->rec_len;
 		}
@@ -268,3 +258,17 @@ static void read_dir(int fd, const struct ext2_inode *inode, const struct ext2_g
 	}
 } /* read_dir() */
 
+
+int main(){
+
+	// struct ext2_group_desc group;
+	// struct ext2_inode inode;
+    // int fd = open(FD_DEVICE, O_RDONLY);
+
+    // read_inode(fd, 2, &group, &inode);
+    // read_dir(fd, &inode, &group);
+
+	List_ETX();
+
+    return 0;
+}

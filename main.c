@@ -1,13 +1,16 @@
-#include "function_ext2.h"
+#include "./function_ext2.h"
+
+#define FD_DEVICE "./myext2image.img" 
 
 int main(){
 
-    //SuperBlock super = ETX_read_superblock();
-    //GroupDesc group = EXT_read_groupBlockDescriptor();
+    INODE inode;
+    GroupDesc group_desc; 
 
-    //printf("\n\ndeu certooooo:%d\n\n", group.bg_block_bitmap);
+    int fd = open(FD_DEVICE, O_RDONLY);
 
-    EXT_contents_diretory();
+    read_inode(fd, 2, &group_desc, &inode);
+    read_dir(fd, &inode, &group_desc);
 
     return 0;
 }
