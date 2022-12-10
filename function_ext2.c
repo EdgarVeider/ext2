@@ -12,10 +12,14 @@
 #define FD_DEVICE "myext2image.img"              /* the floppy disk device */
 #define BLOCK_OFFSET(block) (BASE_OFFSET + (block-1)*block_size)
 
+unsigned int ROOT_DIRECTORY = 2;
+unsigned int CURRENT_DIRECTORY = 2;
+
 static unsigned int block_size = 0;        /* block size (to be calculated) */
 
 static void read_dir(int, const struct ext2_inode*, const struct ext2_group_desc*);
 static void read_inode(int, int, const struct ext2_group_desc*, struct ext2_inode*);
+
 
 struct ext2_super_block Read_SuperBlock(int print){
 	struct ext2_super_block super;
@@ -316,8 +320,9 @@ void read_arq(int fd, struct ext2_inode *inode){
 	
 }
 
-void Read_TXT(char* nome_arquivo){
-	struct ext2_super_block super;
+
+int main(){
+struct ext2_super_block super;
 	struct ext2_group_desc group;
 	struct ext2_inode inode;
 	int fd;
@@ -349,17 +354,9 @@ void Read_TXT(char* nome_arquivo){
 	/* show entries in the root directory */
 
 	read_inode(fd, 2, &group, &inode);   /* read inode 2 (root directory) */
-	unsigned int i_number = Read_Inode_Number(fd, &inode, &group, nome_arquivo);
-
-	printf("\n%d\n", i_number);
+	unsigned int i_number = Read_Inode_Number(fd, &inode, &group, "hello.txt");
 	read_inode(fd, i_number, &group, &inode);
-
 	read_arq(fd, &inode);
-}// LS
-
-
-
-int main(){
 
 
     return 0;
